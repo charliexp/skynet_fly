@@ -19,6 +19,7 @@ local xx_pcall = xx_pcall
 local tonumber = tonumber
 local pairs = pairs
 local tinsert = table.insert
+local tpack = table.pack
 
 local SELF_ADDRESS = nil
 local g_player_map = {}
@@ -141,7 +142,7 @@ local function handle_msg(agent, header, body, rsp_session)
 			end
 		end
 		if hall_plug.handle_end_rpc then --增加目的是考虑到 handle_end的兼容性
-			local handle_res = {func(agent.player_id, header, body, rsp_session)}
+			local handle_res = tpack(func(agent.player_id, header, body, rsp_session))
 			hall_plug.handle_end_rpc(agent.player_id, header, body, rsp_session, handle_res)
 		elseif hall_plug.handle_end then
 			hall_plug.handle_end(agent.player_id, header, body, func(agent.player_id, header, body, rsp_session))

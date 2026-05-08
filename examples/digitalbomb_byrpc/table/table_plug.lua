@@ -98,7 +98,7 @@ function M.table_creator(table_id, table_name, ...)
 		},
 		handle_end_rpc = function(player_id, packid, pack_body, rsp_session, handle_res)
 			log.info("table handle_end_rpc >>> ", player_id, packid, pack_body, rsp_session, handle_res)
-			local ret, errcode, errmsg = tunpack(handle_res)
+			local ret, errcode, errmsg = tunpack(handle_res, 1, handle_res.n)
 			if not ret then
 				m_errors_msg:errors(player_id, errcode, errmsg, packid, rsp_session)
 			else

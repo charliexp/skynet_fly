@@ -12,6 +12,7 @@ local pairs = pairs
 local setmetatable = setmetatable
 local tostring = tostring
 local tinsert = table.insert
+local tpack = table.pack
 
 local g_table_map = {}
 local g_config = nil
@@ -538,7 +539,7 @@ function CMD.request(table_id, player_id, header, body, rsp_session)
 		end
 		
 		if t_info.game_table.handle_end_rpc then --增加目的是考虑到 handle_end的兼容性
-			local handle_res = {func(player_id, header, body, rsp_session)}
+			local handle_res = tpack(func(player_id, header, body, rsp_session))
 			t_info.game_table.handle_end_rpc(player_id, header, body, rsp_session, handle_res)
 		elseif t_info.game_table.handle_end then
 			t_info.game_table.handle_end(player_id, header, body, func(player_id, header, body, rsp_session))
