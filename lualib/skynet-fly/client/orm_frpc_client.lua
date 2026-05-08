@@ -238,7 +238,7 @@ local function cluster_up(svr_name, svr_id)
                     log.error("re syn err ", t._svr_name, t._svr_id, main_key, errno, errmsg)
                 else
                     if pre_watched[main_key] then
-                        local keylist, data = tunpack(ret.result)
+                        local keylist, data = ret:unpack()
                         init_main_data(keylist, data_map, data, main_key)
                     end
                 end
@@ -272,7 +272,7 @@ function M:watch(main_key, add_cb, change_cb, del_cb)
         g_watch_up_map[self._svr_name] = true
     end
 
-    local keylist, data = tunpack(ret.result)
+    local keylist, data = ret:unpack()
     local data_map = self._data_map
     local keylen = #keylist
     init_main_data(keylist, data_map, data, main_key)
@@ -325,7 +325,7 @@ function M:call_orm(cmd, ...)
         return
     end
 
-    return tunpack(ret.result)    
+    return ret:unpack()
 end
 
 return M
