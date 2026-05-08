@@ -1150,6 +1150,120 @@ local function test_slow_callback_warn()
 end
 
 --------------------------------------------------------------------------------
+-- 测试 53：dispatch_tick 重入安全
+-- 在循环定时器回调中调用 skynet.sleep（让出协程），此期间另一个短周期定时器会
+-- 触发新的 dispatch_tick 调用（重入）。验证不崩溃且两个定时器都正确触发。
+-- 这是修复 "attempt to index a nil value (local 'pt')" 的回归测试。
+--------------------------------------------------------------------------------
+local function test_reentrant_dispatch()
+	log.info("=== test_reentrant_dispatch ===")
+	local reentrant_count = 0
+	local inner_count = 0
+
+	-- 内层短周期定时器：expire=10(0.1s), 循环，在外层 sleep 期间会触发多次
+	local t_inner = timer:new(10, timer.loop, function()
+		inner_count = inner_count + 1
+	end)
+
+	-- 外层循环定时器：expire=50(0.5s), 3次，回调中 sleep 会让出协程
+	-- sleep 期间 t_inner 的 dispatch_tick 会重入
+	local t_outer = timer:new(50, 3, function()
+		reentrant_count = reentrant_count + 1
+		skynet.sleep(30)  -- 让出 30 ticks，期间 t_inner 会触发多次
+	end)
+
+	-- 等待足够时间让外层定时器触发完成：3次 * (50 + 30) = 240 + 余量
+	skynet.sleep(400)
+
+	-- 验证外层定时器正确触发了 3 次
+	assert_true(reentrant_count == 3,
+		"reentrant_dispatch: outer timer triggered 3 times (got " .. reentrant_count .. ")")
+	-- 验证内层定时器在重入期间也正常触发了（应该触发了相当多次）
+	assert_true(inner_count >= 10,
+		"reentrant_dispatch: inner timer triggered >=10 times during reentry (got " .. inner_count .. ")")
+
+	t_inner:cancel()
+	log.info("reentrant_dispatch: inner_count=" .. inner_count .. " reentrant_count=" .. reentrant_count)
+end
+
+--------------------------------------------------------------------------------
+-- 测试 54：重入 + pending_readd 不被破坏
+-- 创建多个相同 expire 的循环定时器，其中一个回调会 skynet.sleep，
+-- 验证其他定时器的 pending_readd 重注册不被破坏（不崩溃 + 正确触发）
+--------------------------------------------------------------------------------
+local function test_reentrant_pending_readd_safety()
+	log.info("=== test_reentrant_pending_readd_safety ===")
+	local counts = {0, 0, 0, 0, 0}
+	local timers = {}
+
+	-- 5 个相同 expire 的循环定时器，第 3 个回调中会 sleep
+	for i = 1, 5 do
+		timers[i] = timer:new(50, timer.loop, function()
+			counts[i] = counts[i] + 1
+			if i == 3 then
+				skynet.sleep(20)  -- 第 3 个回调让出，触发重入
+			end
+		end)
+	end
+
+	-- 等待足够时间让定时器循环多次
+	skynet.sleep(400)
+
+	-- 取消所有定时器
+	for i = 1, 5 do
+		timers[i]:cancel()
+	end
+
+	-- 验证所有定时器都触发了多次（不崩溃就是最重要的验证）
+	local all_triggered = true
+	for i = 1, 5 do
+		if counts[i] < 2 then
+			all_triggered = false
+			log.error("reentrant_pending_readd_safety: timer " .. i .. " only triggered " .. counts[i] .. " times")
+		end
+	end
+	assert_true(all_triggered,
+		"reentrant_pending_readd_safety: all 5 timers triggered >=2 times")
+	log.info("reentrant_pending_readd_safety: counts=" ..
+		counts[1] .. "," .. counts[2] .. "," .. counts[3] .. "," .. counts[4] .. "," .. counts[5])
+end
+
+--------------------------------------------------------------------------------
+-- 测试 55：重入 + cancel 在回调中（极端场景）
+-- 一个循环定时器在回调中 sleep 并 cancel 另一个同 expire 的循环定时器
+-- 验证被 cancel 的定时器不会被错误地 readd
+--------------------------------------------------------------------------------
+local function test_reentrant_cancel_in_callback()
+	log.info("=== test_reentrant_cancel_in_callback ===")
+	local count_a = 0
+	local count_b = 0
+	local t_a, t_b
+
+	t_a = timer:new(50, timer.loop, function()
+		count_a = count_a + 1
+		if count_a == 2 then
+			t_b:cancel()  -- 第 2 次触发时 cancel t_b
+			skynet.sleep(20)  -- 并让出
+		end
+	end)
+
+	t_b = timer:new(50, timer.loop, function()
+		count_b = count_b + 1
+	end)
+
+	skynet.sleep(400)
+	t_a:cancel()
+
+	-- t_b 应在 t_a 第 2 次触发后停止
+	assert_true(count_a >= 3,
+		"reentrant_cancel_in_callback: t_a triggered >=3 times (got " .. count_a .. ")")
+	-- t_b 最多触发 2 次（在 t_a 第 2 次 cancel 它之前最多和 t_a 同时触发 2 次）
+	assert_true(count_b <= 3,
+		"reentrant_cancel_in_callback: t_b stopped after cancel (triggered " .. count_b .. " times)")
+	log.info("reentrant_cancel_in_callback: count_a=" .. count_a .. " count_b=" .. count_b)
+end
+
+--------------------------------------------------------------------------------
 -- 主测试入口（定时器相关）
 --------------------------------------------------------------------------------
 local function timer_test()
@@ -1208,6 +1322,10 @@ local function timer_test()
 	-- 新增测试用例（第五批：error/warn 日志验证）
 	test_error_callback()
 	test_slow_callback_warn()
+	-- 新增测试用例（第六批：dispatch_tick 重入安全）
+	test_reentrant_dispatch()
+	test_reentrant_pending_readd_safety()
+	test_reentrant_cancel_in_callback()
 	log.info("=== timer_test all done ===")
 end
 
