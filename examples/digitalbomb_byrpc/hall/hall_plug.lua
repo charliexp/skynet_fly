@@ -124,7 +124,7 @@ end
 -- 客户端消息处理结束
 function M.handle_end_rpc(player_id, packid, pack_body, rsp_session, handle_res)
 	log.info("handle_end_rpc >>> ", player_id, packid, pack_body, rsp_session, handle_res)
-	local ret, errcode, errmsg = tunpack(handle_res)
+	local ret, errcode, errmsg = tunpack(handle_res, 1, handle_res.n)
 	if not ret then
 		errors_msg:errors(player_id, errcode, errmsg, packid, rsp_session)
 	else

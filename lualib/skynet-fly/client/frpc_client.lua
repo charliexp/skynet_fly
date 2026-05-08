@@ -30,6 +30,7 @@ local spack = skynet.pack
 local x_pcall = x_pcall
 local debug_getinfo = debug.getinfo
 local tostring = tostring
+local tpack = table.pack
 local tunpack = table.unpack
 local sselect = select
 
@@ -303,12 +304,6 @@ function RET_META:unpack()
 	return tunpack(self.result, 1, self.result.n)
 end
 
-local function make_result(...)
-	local t = {...}
-	t.n = sselect('#', ...)
-	return t
-end
-
 local function make_ret(cluster_name, result_t)
 	local ret = {
 		cluster_name = cluster_name,
@@ -325,7 +320,7 @@ MODE_RESULT_HANDLE[FRPC_MODE.one] = function(cluster_name, rsp, secret, cluster_
 		return nil, rsp, secret, cluster_name2
 	end
 	local upack = is_cast and unpack_broadcast or unpack_rsp
-	return make_ret(cluster_name, make_result(upack(rsp, secret)))
+	return make_ret(cluster_name, tpack(upack(rsp, secret)))
 end
 
 MODE_RESULT_HANDLE[FRPC_MODE.byid] = MODE_RESULT_HANDLE[FRPC_MODE.one]
@@ -342,7 +337,7 @@ MODE_RESULT_HANDLE[FRPC_MODE.all] = function(cluster_name, cluster_rsp_map, secr
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
 		if type(rsp) == 'string' then
 			local secret = secret_map[cluster_name]
-			tinsert(ret_list, make_ret(cluster_name, make_result(upack(rsp, secret))))
+			tinsert(ret_list, make_ret(cluster_name, tpack(upack(rsp, secret))))
 		else
 			--rsp[errcode, errmsg, cluster_name]
 			tinsert(err_list, rsp)
