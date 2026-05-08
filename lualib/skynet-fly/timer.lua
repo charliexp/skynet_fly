@@ -40,7 +40,7 @@ local string_format = string.format
 -- 超出范围的定时器自动挂载到 tv4 最后一个槽（延迟触发，语义等同于"尽快触发"）
 --
 -- 性能优化：
---   P0: 模块级复用 pending_readd，消除每次 dispatch 的 table 分配
+--   P0: 栈式复用 pending_readd，消除每次 dispatch 的 table 分配，同时支持重入安全
 --   P0: dispatch 中用 internal_add_raw（无 schedule_next），循环后统一调度一次
 --   P0: skynet.now/timeout 缓存为 local 变量，减少全局查找
 --   P0: 回调同步执行（xpcall），无 skynet.fork 开销
@@ -165,10 +165,28 @@ for i = 0, TV_SIZE  - 1 do tv3[i] = new_list() end
 for i = 0, TV_SIZE  - 1 do tv4[i] = new_list() end
 
 ---------------------------------------------------------------------------
--- [P0 优化] 模块级复用 pending_readd，消除每次 dispatch 的 table 分配
+-- [P0 优化] 栈式复用 pending_readd，支持重入安全
+-- 每次 dispatch_tick 从栈顶获取一个列表，退出时归还
+-- 重入时自动分配新列表（极少发生），避免共享数组被破坏
 ---------------------------------------------------------------------------
-local pending_readd = {}
-local pending_readd_n = 0
+local pending_readd_stack = {}        -- 可复用列表的栈
+local pending_readd_stack_n = 0       -- 栈中可用列表数量
+local pending_readd_depth = 0         -- 当前 dispatch_tick 嵌套深度（调试用）
+
+local function acquire_pending_readd()
+    if pending_readd_stack_n > 0 then
+        local list = pending_readd_stack[pending_readd_stack_n]
+        pending_readd_stack[pending_readd_stack_n] = nil
+        pending_readd_stack_n = pending_readd_stack_n - 1
+        return list
+    end
+    return {}
+end
+
+local function release_pending_readd(list)
+    pending_readd_stack_n = pending_readd_stack_n + 1
+    pending_readd_stack[pending_readd_stack_n] = list
+end
 
 ---------------------------------------------------------------------------
 -- 将定时器挂到正确的时间轮槽
@@ -345,11 +363,15 @@ end
 
 ---------------------------------------------------------------------------
 -- dispatch_tick：推进时间轮，触发所有到期定时器
+-- 使用栈式 pending_readd 管理，确保重入安全
 ---------------------------------------------------------------------------
 dispatch_tick = function()
     local now = skynet_now()
-    -- [P0 优化] 复用模块级 pending_readd，重置计数
-    pending_readd_n = 0
+
+    -- [重入安全] 从栈中获取独立的 pending_readd 列表
+    local pending_readd = acquire_pending_readd()
+    local pending_readd_n = 0
+    pending_readd_depth = pending_readd_depth + 1
 
     while wheel_cur <= now do
         local slot_idx = wheel_cur & TV1_MASK
@@ -376,7 +398,10 @@ dispatch_tick = function()
             head.next = head
             head.prev = head
 
-            while t ~= head do
+            -- [重入安全] 额外检查 t ~= nil：重入的 dispatch_tick 中如果
+            -- 对临时链中尚未遍历到的节点调用了 cancel(→list_del)，
+            -- 会将该节点的 next 清为 nil，导致后续 t = next_t = nil
+            while t and t ~= head do
                 local next_t = t.next
                 t.prev = nil
                 t.next = nil
@@ -423,10 +448,14 @@ dispatch_tick = function()
     for i = 1, pending_readd_n do
         local pt = pending_readd[i]
         pending_readd[i] = nil  -- 释放引用
-        if pt.expire_time and not pt.is_cancel and not pt.prev then
+        if pt and pt.expire_time and not pt.is_cancel and not pt.prev then
             internal_add_raw(pt)
         end
     end
+
+    -- [重入安全] 归还列表到栈中供后续复用
+    pending_readd_depth = pending_readd_depth - 1
+    release_pending_readd(pending_readd)
 
     -- 统一调度一次
     schedule_next()
