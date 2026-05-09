@@ -17,7 +17,6 @@ local setmetatable = setmetatable
 local table = table
 local tpack = table.pack
 local tunpack = table.unpack
-local skynet_now = skynet.now
 local skynet_timeout = skynet.timeout
 local skynet_fork = skynet.fork
 local string_format = string.format
@@ -43,7 +42,7 @@ local string_format = string.format
 -- 性能优化：
 --   P0: 栈式复用 pending_readd，消除每次 dispatch 的 table 分配，同时支持重入安全
 --   P0: dispatch 中用 internal_add_raw（无 schedule_next），循环后统一调度一次
---   P0: skynet.now/timeout 缓存为 local 变量，减少全局查找
+--   P0: skynet.timeout 缓存为 local 变量，减少全局查找（skynet.now 不缓存以兼容录像系统）
 --   P0: 回调同步执行（xpcall），无 skynet.fork 开销
 --   P2: 对象池复用定时器 table，减少 GC 压力和 table 分配开销
 ----------------------------------------------------------------------------------------
@@ -285,7 +284,7 @@ schedule_next = function(target_expire)
     pending_version = pending_version + 1
     local ver = pending_version
 
-    local now   = skynet_now()
+    local now   = skynet.now()
     local delay = target_expire - now
     if delay < 1 then delay = 1 end
     if delay > MAX_DRIVE_TICK then delay = MAX_DRIVE_TICK end
@@ -310,13 +309,13 @@ local warn_threshold = 0
 -- 执行单个定时器回调（同步 xpcall，带耗时检测）
 ---------------------------------------------------------------------------
 local function execute_call_back(t)
-    local before = skynet_now()
+    local before = skynet.now()
     local is_ok, err = x_pcall(t.callback, tunpack(t.args, 1, t.args.n))
     if not is_ok then
         log.error("time_out_func err ", err, t.callback, t.args)
     end
     if warn_threshold > 0 then
-        local cost = skynet_now() - before
+        local cost = skynet.now() - before
         if cost >= warn_threshold then
             log.warn(string_format("timer callback slow! cost=%d ticks (%.2fs)",
                 cost, cost / 100))
@@ -340,7 +339,7 @@ local function execute_and_register_after_next(t)
             if t.prev then
                 list_del(t)
             end
-            t.expire_time = skynet_now() + t.expire
+            t.expire_time = skynet.now() + t.expire
             internal_add(t)
         else
             t.is_over = true
@@ -354,7 +353,7 @@ end
 -- 回调通过 skynet.fork 在独立协程中执行，dispatch_tick 不会让出，无需重入保护
 ---------------------------------------------------------------------------
 dispatch_tick = function()
-    local now = skynet_now()
+    local now = skynet.now()
     pending_readd_n = 0
 
     while wheel_cur <= now do
@@ -434,7 +433,7 @@ end
 -- 初始化
 ---------------------------------------------------------------------------
 local function init()
-    wheel_cur = skynet_now()
+    wheel_cur = skynet.now()
     schedule_next()
 end
 
@@ -475,7 +474,7 @@ function M:new(expire, times, callback, ...)
     t.is_cancel     = false
     t.is_over       = false
     t.cur_times     = 0
-    t.expire_time   = skynet_now() + expire
+    t.expire_time   = skynet.now() + expire
     t.is_after_next = false
     t._ref_count    = 1   -- [P2] 用户持有 1 个引用，release() 后归零可回收
     t.prev          = nil
@@ -513,7 +512,7 @@ function M:extend(ex_expire)
         return self
     end
 
-    local now    = skynet_now()
+    local now    = skynet.now()
     local remain = self.expire_time - now
     if remain < 0 then remain = 0 end
 
@@ -534,7 +533,7 @@ function M:remain_expire()
     if self.is_cancel or self.is_over then
         return 0
     end
-    local remain = self.expire_time - skynet_now()
+    local remain = self.expire_time - skynet.now()
     if remain < 0 then remain = 0 end
     return remain
 end
