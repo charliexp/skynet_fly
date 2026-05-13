@@ -128,7 +128,7 @@ g_mode_funcs[M.enum.sharedata] = {
     end,
     switch = function(file_path)
         if not g_flush_time_obj or g_flush_time_obj:remain_expire() < 0 then
-            g_flush_time_obj = timer:new(timer.minute, 1, sharedata.flush)         --刷一下，尽快释放旧数据
+            g_flush_time_obj = timer:once(timer.minute, sharedata.flush)         --刷一下，尽快释放旧数据
         end
         sharedata.switch_new(file_path)
         return g_data_map[file_path]

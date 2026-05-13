@@ -159,11 +159,13 @@ local function check_exit()
 			log.info("exited")
 			SERVER_STATE = SERVER_STATE_TYPE.exited
 			if module_exit() then
-				g_exit_timer = timer:new(timer.minute * 10,1,skynet.exit)
+				g_exit_timer = timer:once(timer.minute * 10,skynet.exit)
 			else
 				log.warn("warning " .. MODULE_NAME .. ' can`t exit')
 			end
 			g_check_timer:cancel()
+			g_check_timer:release()
+			g_check_timer = nil
 			skynet.close_record()
 		end
 	end
@@ -261,7 +263,7 @@ end
 assert(not CMD['close'], "repeat cmd close")
 function CMD.close()
 	log.info("fix_exit begin")
-	g_check_timer = timer:new(timer.minute * 10,timer.loop,check_exit)
+	g_check_timer = timer:new_loop(timer.minute * 10,check_exit)
 	g_check_timer:after_next()
 	module_fix_exit() --确定要退出
 	for _,func in ipairs(g_fix_exit_after_cb) do

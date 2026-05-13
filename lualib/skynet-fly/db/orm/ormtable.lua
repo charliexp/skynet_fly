@@ -250,6 +250,8 @@ local M = {
 local mata = {__index = M, __gc = function(t)
     if t._time_obj then
         t._time_obj:cancel()
+        t._time_obj:release()
+        t._time_obj = nil
     end
 end}
 
@@ -481,7 +483,7 @@ function M:set_cache(expire, inval, cache_limit)
     
     local week_t = setmetatable({},week_mata)                   --挂载一个弱引用表
     week_t[self] = true
-    self._time_obj = timer:new(inval, 0, inval_time_out, week_t)
+    self._time_obj = timer:new_loop(inval, inval_time_out, week_t)
     self._time_obj:after_next()
     self._week_t = week_t
     return self

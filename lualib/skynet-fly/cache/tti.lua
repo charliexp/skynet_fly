@@ -132,7 +132,7 @@ function M:set_cache(key,value)
 	if self.cache_limit and self.cache_cnt >= self.cache_limit then
 		if not self.tting then
 			self.tting = true
-			timer:new(timer.second * 1, 1, TTI_del, self)
+			timer:once(timer.second * 1, TTI_del, self)
 		end
 	end
 

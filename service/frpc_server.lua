@@ -194,7 +194,9 @@ local function hand_shake(fd, session_id, msg, sz)
 
     local cluster_name = svr_name .. ':' .. svr_id
 	agent.login_time_out:cancel()
-    agent.is_hand_shake = true
+	agent.login_time_out:release()
+	agent.login_time_out = nil
+	   agent.is_hand_shake = true
     agent.svr_name = svr_name
     agent.svr_id = svr_id
 	agent.cluster_name = cluster_name
@@ -635,7 +637,7 @@ function SOCKET.open(fd, addr, gate)
 		fd = fd,
 		addr = addr,
 		gate = gate,
-		login_time_out = timer:new(timer.second * 10, 1, close_fd, fd),
+		login_time_out = timer:once(timer.second * 10, close_fd, fd),
         is_hand_shake = nil,                                            --是否握手了
         svr_name = nil,                                            		--连接的集群服务名
         svr_id = nil,                                           		--连接的集群服务ID
@@ -654,6 +656,8 @@ function SOCKET.close(fd)
 	agent.fd = 0
 	g_fd_agent_map[fd] = nil
 	agent.login_time_out:cancel()
+	agent.login_time_out:release()
+	agent.login_time_out = nil
 
 	local sub_map = agent.sub_map
 	if sub_map then
@@ -788,7 +792,7 @@ skynet.start(function()
 		local rpccli = rpc_redis:new()
 		rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key, g_is_encrypt)
 		--1秒写一次
-		timer:new(timer.second,timer.loop,function()
+		timer:new_loop(timer.second,function()
 			rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key, g_is_encrypt)
 		end):after_next()
 	end

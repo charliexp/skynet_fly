@@ -13,7 +13,7 @@ local g_ti = nil
 local g_querying_cnt = 0
 
 local function keep_alive()
-	g_ti = timer:new(timer.second * 10,timer.loop,function()
+	g_ti = timer:new_loop(timer.second * 10,function()
 		if g_db_conn then
 			local ok,ret = pcall(g_db_conn.ping,g_db_conn)
 			if not ok then
@@ -81,6 +81,8 @@ end
 function CMD.exit()
 	if g_ti then
 		g_ti:cancel()
+		g_ti:release()
+		g_ti = nil
 	end
 	if g_db_conn then
 		g_db_conn:disconnect()

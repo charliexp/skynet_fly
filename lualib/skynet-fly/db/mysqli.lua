@@ -44,6 +44,8 @@ end
 local g_lmt = {__gc = function(t)
 	if t.keep_time then
 		t.keep_time:cancel()
+		t.keep_time:release()
+		t.keep_time = nil
 	end
 end}
 
@@ -78,7 +80,7 @@ function M.new_client(db_name)
 	local week_t = setmetatable({}, week_mt)
 	week_t[t] = true
 
-	t.keep_time = timer:new(timer.second * 10,timer.loop, keep_alive, week_t)
+	t.keep_time = timer:new_loop(timer.second * 10, keep_alive, week_t)
 	t.keep_time:after_next()
 
 	setmetatable(t, g_lmt)

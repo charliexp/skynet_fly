@@ -269,7 +269,7 @@ function CMD.start(config)
 
 	g_max_empty_time = config.max_empty_time       --设置桌子空置多久后就会解散
 	if g_max_empty_time and g_max_empty_time > 0 then
-		timer:new(timer.minute * 10, 0, check_dismisstable)
+		timer:new_loop(timer.minute * 10, check_dismisstable)
 	end
 
 	alloc_plug.init(interface)

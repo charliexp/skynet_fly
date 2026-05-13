@@ -113,7 +113,7 @@ function M:handle_msg(packid, body)
         msg_map[session] = {
             msgbuff = "",
             msgsz = msgsz,
-            time_obj = timer:new(self.timeout, 1, clear_msg_data, msg_map, session)
+            time_obj = timer:once(self.timeout, clear_msg_data, msg_map, session)
         }
         return false    --表示忽悠结果
     elseif packtype == netpack_base.PACK_TYPE.BODY then --包体处理
@@ -130,6 +130,8 @@ function M:handle_msg(packid, body)
         end
         one_msg.msgbuff = one_msg.msgbuff .. body.msgstr
         one_msg.time_obj:cancel()
+        one_msg.time_obj:release()
+        one_msg.time_obj = nil
         if one_msg.msgbuff:len() ~= one_msg.msgsz then
             return nil, sfmt("msg len err session[%s] packtype[%s] packid[%s] msglen[%s] recvlen[%s]", session, packtype, packid, one_msg.msgsz, one_msg.msg_buff:len())
         end
