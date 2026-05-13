@@ -163,9 +163,11 @@ local function check_exit()
 			else
 				log.warn("warning " .. MODULE_NAME .. ' can`t exit')
 			end
-			g_check_timer:cancel()
-			g_check_timer:release()
-			g_check_timer = nil
+			if g_check_timer then
+				g_check_timer:cancel()
+				g_check_timer:release()
+				g_check_timer = nil
+			end
 			skynet.close_record()
 		end
 	end

@@ -193,9 +193,11 @@ local function hand_shake(fd, session_id, msg, sz)
 	local is_watch = info.is_watch
 
     local cluster_name = svr_name .. ':' .. svr_id
-	agent.login_time_out:cancel()
-	agent.login_time_out:release()
-	agent.login_time_out = nil
+ if agent.login_time_out then
+  agent.login_time_out:cancel()
+  agent.login_time_out:release()
+  agent.login_time_out = nil
+ end
 	   agent.is_hand_shake = true
     agent.svr_name = svr_name
     agent.svr_id = svr_id
@@ -655,9 +657,11 @@ function SOCKET.close(fd)
 	end
 	agent.fd = 0
 	g_fd_agent_map[fd] = nil
-	agent.login_time_out:cancel()
-	agent.login_time_out:release()
-	agent.login_time_out = nil
+	if agent.login_time_out then
+		agent.login_time_out:cancel()
+		agent.login_time_out:release()
+		agent.login_time_out = nil
+	end
 
 	local sub_map = agent.sub_map
 	if sub_map then

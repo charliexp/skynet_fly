@@ -174,7 +174,9 @@ local function create_rotate(cfg)
     m_timer_obj = time_obj
 
     return function()
-        m_timer_obj:cancel()
+        if m_timer_obj then
+            m_timer_obj:cancel()
+        end
     end
 end
 

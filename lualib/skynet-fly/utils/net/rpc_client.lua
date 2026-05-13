@@ -129,9 +129,11 @@ function M:handle_msg(packid, body)
             return nil, sfmt("invalid tail msg session[%s] packtype[%s] packid[%s]", session, packtype, packid)
         end
         one_msg.msgbuff = one_msg.msgbuff .. body.msgstr
-        one_msg.time_obj:cancel()
-        one_msg.time_obj:release()
-        one_msg.time_obj = nil
+        if one_msg.time_obj then
+            one_msg.time_obj:cancel()
+            one_msg.time_obj:release()
+            one_msg.time_obj = nil
+        end
         if one_msg.msgbuff:len() ~= one_msg.msgsz then
             return nil, sfmt("msg len err session[%s] packtype[%s] packid[%s] msglen[%s] recvlen[%s]", session, packtype, packid, one_msg.msgsz, one_msg.msg_buff:len())
         end
