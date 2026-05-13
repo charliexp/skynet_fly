@@ -104,7 +104,7 @@ local adapter_loop
 adapter_loop = function(point_obj,call_back,...)
     skynet.fork(call_back,...)
     local remain_time = TYPE_REMAIN_TIME_FUNC[point_obj.type](point_obj.month,point_obj.day,point_obj.hour,point_obj.min,point_obj.sec,point_obj.wday,point_obj.yday)
-    point_obj.time_obj = timer:new(remain_time * timer.second,1,adapter_loop,point_obj,call_back,...)
+    point_obj.time_obj = timer:once(remain_time * timer.second,adapter_loop,point_obj,call_back,...)
 end
 
 ---#desc 新建整点报时对象
@@ -195,7 +195,7 @@ end
 ---@return table 对象
 function M:builder(call_back, ...)
     local remain_time = TYPE_REMAIN_TIME_FUNC[self.type](self.month,self.day,self.hour,self.min,self.sec,self.wday,self.yday)
-    self.time_obj = timer:new(remain_time * timer.second,1,adapter_loop,self,call_back,...)
+    self.time_obj = timer:once(remain_time * timer.second,adapter_loop,self,call_back,...)
     return self
 end
 

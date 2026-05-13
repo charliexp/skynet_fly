@@ -476,7 +476,7 @@ function SOCKET.open(fd, addr, gate, is_ws)
 		addr = addr,
 		gate = gate,
 		queue = queue(),
-		login_time_out = timer:new(login_plug.time_out,1,close_fd,fd),
+		login_time_out = timer:once(login_plug.time_out,close_fd,fd),
 		is_ws = is_ws,
 	}
 	g_fd_agent_map[fd] = agent
@@ -491,6 +491,8 @@ function SOCKET.close(fd)
 	agent.fd = 0
 	g_fd_agent_map[fd] = nil
 	agent.login_time_out:cancel()
+	agent.login_time_out:release()
+	agent.login_time_out = nil
 
 	local player_id = agent.player_id
 	local player = g_player_map[player_id]
@@ -658,6 +660,8 @@ skynet.start(function()
 				--继续处理后续登录消息
 			else
 				agent.login_time_out:cancel()
+				agent.login_time_out:release()
+				agent.login_time_out = nil
 				agent.player_id = player_id
 				agent.is_login = true
 			end

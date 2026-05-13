@@ -757,7 +757,7 @@ function CMD.start(config)
 	end
 
 	--检查掉线超时，掉线超时还没有重新连接的需要清理
-	local timer_obj = timer:new(timer.minute,timer.loop,function()
+	local timer_obj = timer:new_loop(timer.minute,function()
 		local cur_time = time_util.skynet_int_time()
 		for player_id,agent in pairs(g_player_map) do
 			if g_player_map[player_id] and not interface:is_online(agent.player_id) and cur_time - agent.dis_conn_time > hall_plug.disconn_time_out then

@@ -49,13 +49,15 @@ function M:wait(k)
     local co = coroutine.running()
     local ti = nil
     if self.time_out then
-       ti = timer:new(self.time_out, 1, skynet.wakeup, co)
+       ti = timer:once(self.time_out, skynet.wakeup, co)
     end
     map[k][co] = true
     tinsert(list[k], co)
     skynet.wait(co)
     if ti then
         ti:cancel()
+        ti:release()
+        ti = nil
     end
     map[k][co] = nil
     local ls = list[k]

@@ -1114,7 +1114,7 @@ function CMD.start(config)
 
 			add_node_info()
 			--本机配置方式
-			timer:new(timer.second * 1, 0, add_node_info):after_next()
+			timer:new_loop(timer.second * 1, add_node_info):after_next()
 		end
 	end)
 
@@ -1129,7 +1129,7 @@ function CMD.fix_exit()
 		cancel()
 	end
 
-	timer:new(timer.minute, 1, function()
+	timer:once(timer.minute, function()
 		for svr_name, node_info in pairs(g_node_info_map) do
 			local id_name_map = node_info.id_name_map
 			for svr_id in pairs(id_name_map) do
