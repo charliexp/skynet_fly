@@ -490,9 +490,11 @@ function SOCKET.close(fd)
 	end
 	agent.fd = 0
 	g_fd_agent_map[fd] = nil
-	agent.login_time_out:cancel()
-	agent.login_time_out:release()
-	agent.login_time_out = nil
+	if agent.login_time_out then
+		agent.login_time_out:cancel()
+		agent.login_time_out:release()
+		agent.login_time_out = nil
+	end
 
 	local player_id = agent.player_id
 	local player = g_player_map[player_id]
@@ -659,9 +661,11 @@ skynet.start(function()
 			elseif player_id == continue then
 				--继续处理后续登录消息
 			else
-				agent.login_time_out:cancel()
-				agent.login_time_out:release()
-				agent.login_time_out = nil
+				if agent.login_time_out then
+					agent.login_time_out:cancel()
+					agent.login_time_out:release()
+					agent.login_time_out = nil
+				end
 				agent.player_id = player_id
 				agent.is_login = true
 			end
