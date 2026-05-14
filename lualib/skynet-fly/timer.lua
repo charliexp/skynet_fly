@@ -109,7 +109,7 @@ end
 
 -- 尝试归还对象到池中（引用计数归零且已终结时才归还）
 local function try_release(t)
-    if t._ref_count <= 0 and (t.is_cancel or t.is_over) then
+    if t._ref_count and t._ref_count <= 0 and (t.is_cancel or t.is_over) then
         pool_release(t)
     end
 end
@@ -327,6 +327,15 @@ end
 -- fork 中执行回调并在完成后尝试归还对象（用于 is_over 的最后一次触发）
 local function fork_execute_and_release(t)
     execute_call_back(t)
+    t._ref_count = t._ref_count - 1
+    try_release(t)
+end
+
+---------------------------------------------------------------------------
+-- fork 中执行回调（循环/多次触发，执行完释放内部引用计数）
+local function fork_execute_call_back(t)
+    execute_call_back(t)
+    t._ref_count = t._ref_count - 1
     try_release(t)
 end
 
@@ -343,9 +352,10 @@ local function execute_and_register_after_next(t)
             internal_add(t)
         else
             t.is_over = true
-            try_release(t)  -- [P2] 引用计数归零时归还到对象池
         end
     end
+    t._ref_count = t._ref_count - 1
+    try_release(t)
 end
 
 ---------------------------------------------------------------------------
@@ -389,7 +399,8 @@ dispatch_tick = function()
                 if not t.is_cancel then
                     t.cur_times = t.cur_times + 1
                     if t.is_after_next then
-                        -- after_next 模式：fork 中执行回调，完成后再注册下次
+                        -- after_next 模式：fork 前增加引用计数，fork 中执行回调，完成后再注册下次
+                        t._ref_count = t._ref_count + 1
                         skynet_fork(execute_and_register_after_next, t)
                     else
                         if t.times == TIMES_LOOP or t.cur_times < t.times then
@@ -399,12 +410,14 @@ dispatch_tick = function()
                         else
                             t.is_over = true
                         end
+                        -- fork 前增加内部引用计数，防止 fork 执行期间用户 release() 导致对象被过早归还
+                        t._ref_count = t._ref_count + 1
                         if t.is_over then
                             -- 最后一次触发：fork 中执行回调完成后再归还对象
                             skynet_fork(fork_execute_and_release, t)
                         else
-                            -- 循环/多次触发：直接 fork 执行回调
-                            skynet_fork(execute_call_back, t)
+                            -- 循环/多次触发：fork 执行回调，完成后释放内部引用
+                            skynet_fork(fork_execute_call_back, t)
                         end
                     end
                 else
