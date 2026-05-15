@@ -63,4 +63,11 @@ function M.pubsyn(channel_name, ...)
     skynet.send(addr, 'lua', "pubsyn", channel_name, msg)
 end
 
+---#desc 取消远程推送同步数据（通知监听端数据已失效）
+---@param channel_name string 通道名
+function M.unpubsyn(channel_name)
+    local addr = get_frpc_addr()
+    skynet.send(addr, 'lua', "unpubsyn", channel_name)
+end
+
 return M

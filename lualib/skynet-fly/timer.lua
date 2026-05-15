@@ -36,8 +36,8 @@ local string_format = string.format
 --   extend  O(1)  —— cancel + create
 --   dispatch O(k) —— k = 当前 tick 到期数量
 --
--- 最大可调度延迟：67108863 ticks ≈ 6710886 秒 ≈ 77.7 天
--- 超出范围的定时器自动挂载到 tv4 最后一个槽（延迟触发，语义等同于"尽快触发"）
+-- 最大可调度延迟：67108863 ticks ≈ 671088 秒 ≈ 7.77 天
+-- 超出范围的定时器仍能正确触发，通过多次 cascade 逐步降级直到到期
 --
 -- 性能优化：
 --   P0: 栈式复用 pending_readd，消除每次 dispatch 的 table 分配，同时支持重入安全

@@ -261,6 +261,116 @@ local function test_orm_frpc_client()
 	end)
 end
 
+--测试unpubsyn取消同步的独立cancel handler
+local function test_unpubsyn_cancel()
+	log.info("========== test_unpubsyn_cancel start ==========")
+
+	--测试1：基本 watch + watch_cancel（对应服务端 test_cancel_syn）
+	log.info("--- 测试1: 基本 watch + watch_cancel ---")
+	watch_syn_client.watch("frpc_s", "test_cancel_syn", "cancel_syn_handler", function(cluster_name, ...)
+		log.info("[测试1] watch_syn test_cancel_syn data >>> ", cluster_name, ...)
+	end)
+
+	watch_syn_client.watch_cancel("frpc_s", "test_cancel_syn", "cancel_syn_handler", function(cluster_name, channel_name)
+		log.info("[测试1] watch_cancel test_cancel_syn cancelled! >>> ", cluster_name, channel_name)
+	end)
+
+	--测试2：取消后重新发布（对应服务端 test_cancel_repub）
+	log.info("--- 测试2: 取消后重新发布 ---")
+	watch_syn_client.watch("frpc_s", "test_cancel_repub", "repub_handler", function(cluster_name, ...)
+		log.info("[测试2] watch_syn test_cancel_repub data >>> ", cluster_name, ...)
+	end)
+
+	watch_syn_client.watch_cancel("frpc_s", "test_cancel_repub", "repub_cancel_handler", function(cluster_name, channel_name)
+		log.info("[测试2] watch_cancel test_cancel_repub cancelled! >>> ", cluster_name, channel_name)
+	end)
+
+	--测试3：pwatch + pwatch_cancel（模式匹配 *:age:address，对应服务端 unpubsyn name1:age:address）
+	log.info("--- 测试3: pwatch + pwatch_cancel ---")
+	watch_syn_client.pwatch("frpc_s", "*:age:address", "pwatch_cancel_test", function(cluster_name, ...)
+		log.info("[测试3] pwatch *:age:address data >>> ", cluster_name, ...)
+	end)
+
+	watch_syn_client.pwatch_cancel("frpc_s", "*:age:address", "pwatch_cancel_test", function(cluster_name, pchannel_name, channel_name)
+		log.info("[测试3] pwatch_cancel *:age:address cancelled! >>> ", cluster_name, pchannel_name, channel_name)
+	end)
+
+	--测试4：多个 cancel handler 注册同一 channel（对应服务端 test_multi_cancel）
+	log.info("--- 测试4: 多个 cancel handler 注册同一 channel ---")
+	watch_syn_client.watch("frpc_s", "test_multi_cancel", "multi_handler_1", function(cluster_name, ...)
+		log.info("[测试4] watch_syn test_multi_cancel handler_1 data >>> ", cluster_name, ...)
+	end)
+
+	watch_syn_client.watch_cancel("frpc_s", "test_multi_cancel", "multi_cancel_handler_1", function(cluster_name, channel_name)
+		log.info("[测试4] watch_cancel test_multi_cancel handler_1 cancelled! >>> ", cluster_name, channel_name)
+	end)
+
+	watch_syn_client.watch("frpc_s", "test_multi_cancel", "multi_handler_2", function(cluster_name, ...)
+		log.info("[测试4] watch_syn test_multi_cancel handler_2 data >>> ", cluster_name, ...)
+	end)
+
+	watch_syn_client.watch_cancel("frpc_s", "test_multi_cancel", "multi_cancel_handler_2", function(cluster_name, channel_name)
+		log.info("[测试4] watch_cancel test_multi_cancel handler_2 cancelled! >>> ", cluster_name, channel_name)
+	end)
+
+	--测试5：快速 pubsyn + unpubsyn 场景（对应服务端 test_quick_cancel）
+	log.info("--- 测试5: 快速 pubsyn + unpubsyn ---")
+	watch_syn_client.watch("frpc_s", "test_quick_cancel", "quick_handler", function(cluster_name, ...)
+		log.info("[测试5] watch_syn test_quick_cancel data >>> ", cluster_name, ...)
+	end)
+
+	watch_syn_client.watch_cancel("frpc_s", "test_quick_cancel", "quick_cancel_handler", function(cluster_name, channel_name)
+		log.info("[测试5] watch_cancel test_quick_cancel cancelled! >>> ", cluster_name, channel_name)
+	end)
+
+	--测试6：watch_cancel_byid 指定 svr_id 的 cancel handler
+	log.info("--- 测试6: watch_cancel_byid ---")
+	watch_syn_client.watch_byid("frpc_s", 1, "test_cancel_syn", "cancel_syn_byid_handler", function(cluster_name, ...)
+		log.info("[测试6] watch_byid test_cancel_syn data >>> ", cluster_name, ...)
+	end)
+
+	watch_syn_client.watch_cancel_byid("frpc_s", 1, "test_cancel_syn", "cancel_syn_byid_handler", function(cluster_name, channel_name)
+		log.info("[测试6] watch_cancel_byid test_cancel_syn cancelled! >>> ", cluster_name, channel_name)
+	end)
+
+	--测试7：pwatch_cancel_byid 指定 svr_id 的 pwatch cancel handler
+	log.info("--- 测试7: pwatch_cancel_byid ---")
+	watch_syn_client.pwatch_byid("frpc_s", 1, "*:age:address", "pwatch_cancel_byid_test", function(cluster_name, ...)
+		log.info("[测试7] pwatch_byid *:age:address data >>> ", cluster_name, ...)
+	end)
+
+	watch_syn_client.pwatch_cancel_byid("frpc_s", 1, "*:age:address", "pwatch_cancel_byid_test", function(cluster_name, pchannel_name, channel_name)
+		log.info("[测试7] pwatch_cancel_byid *:age:address cancelled! >>> ", cluster_name, pchannel_name, channel_name)
+	end)
+
+	--测试8：注册 cancel handler 后注销（unwatch_cancel），验证注销后不再收到回调
+	log.info("--- 测试8: unwatch_cancel 注销测试 ---")
+	watch_syn_client.watch("frpc_s", "test_cancel_repub", "should_not_fire_handler", function(cluster_name, ...)
+		log.info("[测试8] watch_syn test_cancel_repub data >>> ", cluster_name, ...)
+	end)
+
+	watch_syn_client.watch_cancel("frpc_s", "test_cancel_repub", "should_not_fire_cancel", function(cluster_name, channel_name)
+		--此 handler 应该不会被触发，因为注册后会被注销
+		log.info("[测试8] ERROR: should_not_fire_cancel was called! >>> ", cluster_name, channel_name)
+	end)
+
+	--立即注销这个 cancel handler
+	watch_syn_client.unwatch_cancel("frpc_s", "test_cancel_repub", "should_not_fire_cancel")
+	log.info("[测试8] unwatch_cancel should_not_fire_cancel done, this handler should not fire")
+
+	--测试9：unpwatch_cancel 注销 pwatch cancel handler
+	log.info("--- 测试9: unpwatch_cancel 注销测试 ---")
+	watch_syn_client.pwatch_cancel("frpc_s", "*:age:address", "pwatch_should_not_fire", function(cluster_name, pchannel_name, channel_name)
+		--此 handler 应该不会被触发
+		log.info("[测试9] ERROR: pwatch_should_not_fire was called! >>> ", cluster_name, pchannel_name, channel_name)
+	end)
+
+	watch_syn_client.unpwatch_cancel("frpc_s", "*:age:address", "pwatch_should_not_fire")
+	log.info("[测试9] unpwatch_cancel pwatch_should_not_fire done, this handler should not fire")
+
+	log.info("========== test_unpubsyn_cancel all handlers registered ==========")
+end
+
 function CMD.start()
 	skynet.fork(function()
 		--test_base_msg()
@@ -269,7 +379,27 @@ function CMD.start()
 		--test_benchmark()
 		--test_watch_syn()
 		--test_errorcode()
-		test_orm_frpc_client()
+		--test_orm_frpc_client()
+
+		--等待两个 frpc_s 节点上线后再开始测试
+		local up_count = 0
+		local up_svr_ids = {}
+		local wait_co = coroutine.running()
+		frpc_client:watch_up("frpc_s", function(svr_name, svr_id)
+			if not up_svr_ids[svr_id] then
+				up_svr_ids[svr_id] = true
+				up_count = up_count + 1
+				log.info("frpc_s svr_id up: ", svr_id, " total up_count: ", up_count)
+				if up_count >= 2 then
+					skynet.wakeup(wait_co)
+				end
+			end
+		end, "test_unpubsyn_watch_up")
+		log.info("waiting for 2 frpc_s nodes to come online...")
+		skynet.wait(wait_co)
+		log.info("2 frpc_s nodes are online, start test_unpubsyn_cancel")
+
+		test_unpubsyn_cancel()
 	end)
 
 	-- timer:new(timer.second * 5, 1, function()

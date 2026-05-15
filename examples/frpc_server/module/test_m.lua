@@ -102,6 +102,56 @@ function CMD.start(config)
 				--g_player_entity:change_save_one_entry({player_id = 10001, sex = i})
 			end
 		end)
+
+		--测试1：基本 unpubsyn 取消同步
+		skynet.fork(function()
+			skynet.sleep(100) --等1秒确保客户端已连接
+			watch_server.pubsyn("test_cancel_syn", "hello test_cancel_syn data")
+			log.info("pubsyn test_cancel_syn done")
+			skynet.sleep(1000) --等10秒后取消
+			watch_server.unpubsyn("test_cancel_syn")
+			log.info("unpubsyn test_cancel_syn done")
+		end)
+
+		--测试2：取消后重新发布（验证 re-pubsyn 能再次同步到客户端）
+		skynet.fork(function()
+			skynet.sleep(200)
+			watch_server.pubsyn("test_cancel_repub", "first publish data", 1)
+			log.info("pubsyn test_cancel_repub first done")
+			skynet.sleep(800) --等8秒后取消
+			watch_server.unpubsyn("test_cancel_repub")
+			log.info("unpubsyn test_cancel_repub done")
+			skynet.sleep(500) --再等5秒后重新发布
+			watch_server.pubsyn("test_cancel_repub", "second publish data after cancel", 2)
+			log.info("pubsyn test_cancel_repub second done (re-publish after cancel)")
+		end)
+
+		--测试3：取消 pwatch 匹配的 channel（name1:age:address 匹配 *:age:address 模式）
+		skynet.fork(function()
+			skynet.sleep(1500) --等15秒后取消其中一个匹配 *:age:address 的channel
+			watch_server.unpubsyn("name1:age:address")
+			log.info("unpubsyn name1:age:address done (pwatch cancel test)")
+		end)
+
+		--测试4：多个 cancel handler 场景测试（用独立channel）
+		skynet.fork(function()
+			skynet.sleep(300)
+			watch_server.pubsyn("test_multi_cancel", "multi handler data", 100)
+			log.info("pubsyn test_multi_cancel done")
+			skynet.sleep(1200)
+			watch_server.unpubsyn("test_multi_cancel")
+			log.info("unpubsyn test_multi_cancel done")
+		end)
+
+		--测试5：快速 pubsyn + unpubsyn（边界场景：快速取消）
+		skynet.fork(function()
+			skynet.sleep(400)
+			watch_server.pubsyn("test_quick_cancel", "quick data")
+			log.info("pubsyn test_quick_cancel done")
+			skynet.sleep(50) --仅等0.5秒即取消
+			watch_server.unpubsyn("test_quick_cancel")
+			log.info("unpubsyn test_quick_cancel done (quick cancel)")
+		end)
 	end
 	--注册别名
 	skynet.register(".testserver_" .. base_info.index)

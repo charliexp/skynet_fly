@@ -529,6 +529,15 @@ local function add_node_watch(cluster_name)
 						channel_info.req_syned = false
 						rsp_source_map(channel_info, WATCH_SYN_RET.syn, version, luamsg)
 					end
+				elseif pack_id == FRPC_PACK_ID.cancel_subsyn then
+					local cancel_channel_name = skynet.unpack(rsp)
+					local channel_info = watch_syn_info[cancel_channel_name]
+					if channel_info then
+						channel_info.version = nil
+						channel_info.luamsg = nil
+						channel_info.req_syned = false
+						rsp_source_map(channel_info, WATCH_SYN_RET.cancel)
+					end
 				elseif pack_id == FRPC_PACK_ID.unsubsyn then
 				elseif pack_id == FRPC_PACK_ID.psubsyn then
 					local version, name_map = skynet.unpack(rsp)

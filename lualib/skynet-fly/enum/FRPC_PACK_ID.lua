@@ -10,6 +10,7 @@ local enum = {
     unsubsyn                = 14,            --取消订阅同步
     psubsyn                 = 15,            --批订阅同步
     unpsubsyn               = 16,            --取消批订阅同步
+    cancel_subsyn           = 17,            --推送端取消同步数据
 
     balance_send            = 100,           --简单轮询负载均衡
     mod_send                = 101,
