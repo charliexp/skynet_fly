@@ -98,7 +98,7 @@ local function log_service()
         g_id_name_map[id] = {file_path = file_path, file_name = file_name}
         g_file_map[id] = file
         if flush_inval > 0 then
-            timer:new(flush_inval, 0, flush_file, id)
+            timer:new_loop(flush_inval, flush_file, id)
         else
             g_iswf_map[id] = true
         end
