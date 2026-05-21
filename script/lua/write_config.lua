@@ -69,6 +69,7 @@ local config = {
 	recordfile      = recordfile,		  --播放录像的文件名
 	recordlimit     = 1024 * 1024 * 100,  --录像记录限制(字节数) 超过不再写录像
 	machine_id      = 1,				  --机器ID(全局唯一)
+	snowflake_epoch = "2020-01-01 00:00:00", --雪花算法纪元起始时间(格式: "年-月-日 时:分:秒")
 	trace			= 0,				  --详细链路追踪
 	luatrace		= 0,				  --链路追踪
 	certfile        = "./server-cert.pem",--ssl 证书相关
