@@ -157,7 +157,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     target_link_libraries(pb liblua)
 
     # 生成动态库 lfs.so
-    aux_source_directory(3rd/luafilesystem-1_8_0/src LFS_SRC)
+    aux_source_directory(3rd/luafilesystem/src LFS_SRC)
     add_library(lfs SHARED ${LFS_SRC})
     target_link_libraries(lfs liblua)
 
@@ -202,16 +202,20 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     target_include_directories(socket PRIVATE 3rd/luasocket/src/)
 
     # 生成动态库 openssl.so
-    aux_source_directory(3rd/lua-openssl-0.9.0-0/src OPENSSL_SRC)
-    aux_source_directory(3rd/lua-openssl-0.9.0-0/deps/auxiliar OPENSSL_AUX_SRC)
-    aux_source_directory(3rd/lua-openssl-0.9.0-0/deps/lua-compat OPENSSL_COMPAT_SRC)
-    aux_source_directory(3rd/lua-openssl-0.9.0-0/deps/lua-compat/c-api OPENSSL_COMPAT_API_SRC)
-    add_library(openssl SHARED ${OPENSSL_COMPAT_SRC} ${OPENSSL_AUX_SRC} ${OPENSSL_SRC} ${OPENSSL_COMPAT_API_SRC})
+    aux_source_directory(3rd/lua-openssl/src OPENSSL_SRC)
+    list(REMOVE_ITEM OPENSSL_SRC
+        "3rd/lua-openssl/src/group.c"
+        "3rd/lua-openssl/src/point.c"
+        "3rd/lua-openssl/src/ec_util.c")
+    aux_source_directory(3rd/lua-openssl/deps/auxiliar OPENSSL_AUX_SRC)
+    aux_source_directory(3rd/lua-openssl/deps/lua-compat/c-api OPENSSL_COMPAT_API_SRC)
+    add_library(openssl SHARED ${OPENSSL_AUX_SRC} ${OPENSSL_SRC} ${OPENSSL_COMPAT_API_SRC})
     target_include_directories(openssl PRIVATE win3rd/openssl/include/
-    3rd/lua-openssl-0.9.0-0/deps/auxiliar/
-    3rd/lua-openssl-0.9.0-0/src/
-    3rd/lua-openssl-0.9.0-0/deps/lua-compat/
-    3rd/lua-openssl-0.9.0-0/deps/lua-compat/c-api/)
+    3rd/lua-openssl/deps/auxiliar/
+    3rd/lua-openssl/src/
+    3rd/lua-openssl/deps/lua-compat/
+    3rd/lua-openssl/deps/lua-compat/c-api/)
+    target_compile_definitions(openssl PRIVATE LUA_LIB)
     target_link_directories(openssl PRIVATE win3rd/openssl/lib/windows/)
     target_link_libraries(openssl ws2_32 mswsock liblua libposix pthreadVC3 libssl libcrypto Crypt32)
 
