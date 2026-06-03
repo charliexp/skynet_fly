@@ -277,7 +277,7 @@ function M:close_ready()
 end
 
 ---#desc 注册访问，想要访问一个可热更访问，首先需要在load阶段注册访问
----@param ... string[] 可热更访问模块名 列表
+---@vararg string 可热更访问模块名 列表
 function M:register(...)
 	local module_base = module_info.get_base_info()
 	local mod_name_list = {...}
@@ -292,7 +292,7 @@ function M:register(...)
 end
 
 ---#desc 设置弱访问者 如果2个可热更模块相互访问，需要有一方去标记另一方为弱访问者，这样才不会因环访问导致双方旧服务无法退出
----@param ... string[] 可热更访问模块名 列表
+---@vararg string 可热更访问模块名 列表
 function M:set_week_visitor(...)
 	local mod_name_list = {...}
 	for _,mod_name in ipairs(mod_name_list) do
@@ -301,7 +301,7 @@ function M:set_week_visitor(...)
 end
 
 ---#desc 设置总能切换访问到新服务，如果不想因自身为旧服务，就只能访问对方旧服务，就可以调用此接口
----@param ... string[] 可热更访问模块名 列表
+---@vararg string 可热更访问模块名 列表
 function M:set_always_swtich(...)
 	local mod_name_list = {...}
 	for _,mod_name in ipairs(mod_name_list) do
@@ -381,7 +381,7 @@ end
 
 ---#desc 查询模块服务是否准备好了
 ---@param module_name string 模块名
----@return bool
+---@return boolean
 function M:is_ready(module_name)
 	local t = rawget(g_mod_svr_ids_map, module_name)
 	if not t then return false end
@@ -407,7 +407,7 @@ end
 
 ---#desc 创建一个skynet内部rpc调用对象
 ---@param module_name string 模块名
----@param instance_name string 实例名称，它是模块的二级分类
+---@param instance_name string|nil 实例名称，它是模块的二级分类
 ---@param can_switch_func function|nil 是否可以切服，当连接的模块服务地址更新后，是否要切换到新服务，每次发消息的时候都会检测是否切服,不传默认切
 ---@return table obj
 function M:new(module_name,instance_name,can_switch_func)
@@ -439,7 +439,7 @@ end
 
 ---#desc 创建一个skynet内部rpc调用对象, send,call 使用 rawsend rawcall方式(注：一般做转发才用这个，请清楚了解 rawsend和send的区别再考虑使用，否则处理不好，会造成内存泄漏)
 ---@param module_name string 模块名
----@param instance_name string 实例名称，它是模块的二级分类
+---@param instance_name string|nil 实例名称，它是模块的二级分类
 ---@param can_switch_func function|nil 是否可以切服，当连接的模块服务地址更新后，是否要切换到新服务，每次发消息的时候都会检测是否切服,不传默认切
 ---@return table obj
 function M:new_raw(module_name,instance_name,can_switch_func)
@@ -452,7 +452,7 @@ end
 
 ---#desc 常驻new对象 默认切服
 ---@param module_name string 模块名
----@param instance_name string 实例名称，它是模块的二级分类
+---@param instance_name string|nil 实例名称，它是模块的二级分类
 ---@return table obj
 function M:instance(module_name,instance_name)
 	assert(module_name)
@@ -477,7 +477,7 @@ function M:instance(module_name,instance_name)
 end
 
 ---#desc 设置mod映射访问的数字 如果没有设置，mod消息时默认使用 自身服务id % 服务数量
----@param num number 模块名
+---@param num number mod 数字
 ---@return table obj
 function M:set_mod_num(num)
 	assert(type(num) == 'number')
@@ -493,7 +493,7 @@ end
 ]]
 
 ---#desc 设置mod映射访问的数字 如果没有设置，mod消息时默认使用 自身服务id % 服务数量
----@param num number 模块名
+---@param name string 模块名
 ---@return table obj
 function M:set_instance_name(name)
 	assert(type(name) == 'string')

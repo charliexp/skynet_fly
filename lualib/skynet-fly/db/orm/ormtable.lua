@@ -509,7 +509,7 @@ end
 
 ---#desc 构建表
 ---@param adapterinterface number 数据库适配接口
----@return table obj
+---@return table|nil
 function M:builder(adapterinterface)
     assert(#self._keylist > 0, "not set keys")      --没有设置主键
     if self._cache_time ~= 0 then

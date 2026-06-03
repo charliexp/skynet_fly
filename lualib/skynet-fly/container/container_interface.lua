@@ -16,7 +16,6 @@ local M = {}
 ---#content start_failed = 5,       --启动失败
 
 ---#desc 获取服务状态
----@param tabname string 表名
 ---@return number
 function M.get_server_state()
     error("not implemented interface")    --没有实现该接口

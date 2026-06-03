@@ -551,7 +551,7 @@ end
 
 ---#desc 数组全排列遍历
 ---@param arr table 数组
----@return talbe
+---@return function
 function M.permute_pairs(arr)
     local len = #arr
     if len == 0 then

@@ -31,7 +31,7 @@ local mata = {__index = M}
 ---@param file_path string 日志存放路径
 ---@param file_name string 文件名
 ---@param flush_inval number? flush间隔时间
----@param max_age number? 最大保留天数
+---@param maxage number? 最大保留天数
 ---@return table obj
 function M:new(file_path, file_name, flush_inval, maxage)
     local t = {

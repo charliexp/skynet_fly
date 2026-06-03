@@ -317,7 +317,7 @@ function M:get_data(main_key)
 end
 
 ---#desc 远程调用orm的方法
----@param main_key string orm的第一个key
+---@param cmd string 命令
 function M:call_orm(cmd, ...)
     local ret, errno, errmsg = self._cli:call_by_alias('call_orm', cmd, ...)
     if not ret then

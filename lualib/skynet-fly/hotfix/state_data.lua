@@ -28,11 +28,11 @@ end
 ---#desc 分配一个公共表
 ---@param tabname string 表名
 ---@return table
-function M.global_table(tab_name)
-    if not g_map[tab_name] then
-        g_map[tab_name] = {}
+function M.global_table(tabname)
+    if not g_map[tabname] then
+        g_map[tabname] = {}
     end
-    return g_map[tab_name]
+    return g_map[tabname]
 end
 
 return M

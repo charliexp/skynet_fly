@@ -1,3 +1,4 @@
+---@diagnostic disable: cast-local-type, param-type-mismatch
 ---#API
 ---#content ---
 ---#content title: orm mysql适配器
@@ -462,6 +463,7 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         insert_upsert_prepare_list[i] = new_prepare_obj(insert_format_head .. end_str .. " ON DUPLICATE KEY UPDATE " .. upsert_update_str)
     end
 
+---@diagnostic disable-next-line: cast-local-type
     insert_format_head = nil
     insert_format_end = nil
 

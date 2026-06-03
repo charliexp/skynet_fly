@@ -21,7 +21,7 @@ local M = {}
 local mt = {__index = M}
 ---#desc 可热更模块接口
 ---@param mod_name string 可热更服务模块名
----@param instance_name string 可热更服务模块实例名
+---@param instance_name string|nil 可热更服务模块实例名
 ---@return table obj
 function M:new(mod_name, instance_name)
     local t = {

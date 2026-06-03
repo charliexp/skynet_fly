@@ -209,7 +209,7 @@ end)
 ---@param mode FRPC_MODE 调用模式
 ---@param svr_name string 结点名称
 ---@param module_name string 可热更模块名
----@param instance_name string 实例名称
+---@param instance_name string|nil 实例名称
 ---@return table obj
 function M:instance(mode, svr_name, module_name, instance_name)
 	assert(svr_name,"not svr_name")
@@ -261,7 +261,7 @@ function M:set_instance_name(name)
 end
 
 ---#desc 指定服务id
----@param name string 实例名 
+---@param id number 服务id 
 ---@return table obj
 function M:set_svr_id(id)
 	self.svr_id = id
@@ -410,7 +410,7 @@ end
 
 ---#desc 给对端结点的module_name模板用broadcast_call的方式发送消息
 ---@param ... any[] cmd, arg1, arg2, arg3, ...
----@return table|nil, errcode, errmsg, cluster_name
+---@returns table|nil, errcode, errmsg, cluster_name
 function M:broadcast_call(...)
 	local mode = self.mode
 	local cmd = G_MODE_CALL_CMD[mode]
@@ -434,7 +434,7 @@ end
 
 ---#desc 给对端结点的别名服务call消息(module_name填入别名)
 ---@param ... any[] cmd, arg1, arg2, arg3, ...
----@return table|nil, errcode, errmsg, cluster_name
+---@returns table|nil, errcode, errmsg, cluster_name
 function M:call_by_alias(...)
 	local mode = self.mode
 	local cmd = G_MODE_CALL_CMD[mode]
@@ -461,7 +461,7 @@ end
 
 ---#desc 给单个结点的module_name模板用balance_call_by_name的方式发送消息
 ---@param ... any[] cmd, arg1, arg2, arg3, ...
----@return table|nil, errcode, errmsg, cluster_name
+---@returns table|nil, errcode, errmsg, cluster_name
 function M:balance_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	local mode = self.mode
@@ -489,7 +489,7 @@ end
 
 ---#desc 给对端结点的module_name模板用mod_call_by_name的方式发送消息
 ---@param ... any[] cmd, arg1, arg2, arg3, ...
----@return table|nil, errcode, errmsg, cluster_name
+---@returns table|nil, errcode, errmsg, cluster_name
 function M:mod_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	local mode = self.mode
@@ -517,7 +517,7 @@ end
 
 ---#desc 给单个结点的module_name模板用broadcast_call_by_name的方式发送消息
 ---@param ... any[] cmd, arg1, arg2, arg3, ...
----@return table|nil, errcode, errmsg, cluster_name
+---@returns table|nil, errcode, errmsg, cluster_name
 function M:broadcast_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	local mode = self.mode

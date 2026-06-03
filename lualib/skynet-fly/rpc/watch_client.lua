@@ -236,10 +236,12 @@ local function unwatch(svr_name, channel_name, handle_name)
     if not channel_map[handle_name] then return end
     channel_map[handle_name] = nil
     local handlers = get_channel_handlers(svr_name, channel_name)
-    for i = 1, #handlers do
-        if handlers[i] == handle_name then
-            tremove(handlers, i)
-            break
+    if handlers then
+        for i = 1, #handlers do
+            if handlers[i] == handle_name then
+                tremove(handlers, i)
+                break
+            end
         end
     end
 
@@ -324,10 +326,12 @@ local function unwatch_byid(svr_name, svr_id, channel_name, handle_name)
     channel_map[handle_name] = nil
 
     local handlers = get_channel_svr_id_handlers(svr_name, svr_id, channel_name)
-    for i = 1, #handlers do
-        if handlers[i] == handle_name then
-            tremove(handlers, i)
-            break
+    if handlers then
+        for i = 1, #handlers do
+            if handlers[i] == handle_name then
+                tremove(handlers, i)
+                break
+            end
         end
     end
 

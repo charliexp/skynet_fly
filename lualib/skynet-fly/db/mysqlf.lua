@@ -44,7 +44,7 @@ end
 ---@return table obj
 function M:instance(db_name)
 	if not db_name then
-		g_instance = g_instance or M:new()
+		g_instance = g_instance or M:new(db_name)
 		return g_instance
 	end
 
@@ -67,13 +67,12 @@ function M:query(sql_str)
 end
 
 ---#desc 获取mysql_m配置的最大包体上限值
----@param sql_str string sql语句
 ---@return number
 function M:max_packet_size()
 	if self.db_name then
 		return self.client:balance_call_by_name("max_packet_size")
 	else
-		self.client:balance_call("max_packet_size")
+		return self.client:balance_call("max_packet_size")
 	end
 end
 

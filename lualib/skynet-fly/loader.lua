@@ -14,6 +14,7 @@ end
 local main, pattern
 
 local err = {}
+---@diagnostic disable-next-line: param-type-mismatch
 for pat in string.gmatch(LUA_SERVICE, "([^;]+);*") do
 	local filename = string.gsub(pat, "?", SERVICE_NAME)
 	local f, msg = loadfile(filename)
